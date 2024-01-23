@@ -25,8 +25,6 @@ module.exports = gql`
 
   input BalanceReportInput {
     accountNumber: String
-    email: String
-    phoneNumber: String
     marketValue: String
     erfNumber: String
     vatNumber: String
@@ -55,13 +53,40 @@ module.exports = gql`
     value: String
   }
 
+  type Email {
+    id: ID!
+    accountNumber: String
+    status: String
+    createdAt: String!
+  }
+  type Sms {
+    id: ID!
+    accountNumber: String
+    status: String
+    createdAt: String!
+  }
+
+  type Notification {
+    emails: [Email]
+    sms: [Sms]
+  }
+
   type StatementDetail {
     id: ID!
+    firstName: String
+    lastName: String
     date: String
     accountNumber: String!
     consumerName: String
     phoneNumber: String
     email: String
+    password: String
+    idNumber: String
+    isIndigent: String
+    indigentExpiry: String
+    lastPaymentDate: String
+    lastPaymentAmount: String
+    accountStatus: String
     province: String
     town: String
     suburb: String
@@ -92,6 +117,12 @@ module.exports = gql`
     consumerName: String
     phoneNumber: String
     email: String
+    idNumber: String
+    isIndigent: String
+    indigentExpiry: String
+    lastPaymentDate: String
+    lastPaymentAmount: String
+    accountStatus: String
     province: String
     town: String
     suburb: String
@@ -137,6 +168,7 @@ module.exports = gql`
   type Query {
     getAllStatements: [StatementDetail]
     getStatement(accountNumber: String!): StatementDetail
+
     getCashPayment(accountNumber: String!): Balance
     getInterest(accountNumber: String!): Balance
     getRefuse(accountNumber: String!): Balance
@@ -147,10 +179,19 @@ module.exports = gql`
     getAllMeterReadings: [MeterReadings]
     getMeterReadings(accountNumber: String!): MeterReadings
     getAdmins: [Admin]
+    getSuccessfulEmailsCount: Int!
+    getFailedEmailsCount: Int
+    getSuccessfulSmsCount: Int!
+    getFailedSmsCount: Int
+    getUserNotifications(accountNumber: String!): Notification
   }
 
   type Mutation {
     loginAdmin(email: String!, password: String!): Admin!
+    createNotifications: String!
+    createUserNotification(accountNumber: String!): String!
+    createUserSmsNotification(accountNumber: String!): String!
+    createUserEmailNotification(accountNumber: String!): String!
     createAdmin(adminInput: AdminInput): Admin!
     createStatementDetails(input: StatementDetailsInput): String!
     createMeterReadings(meterReadingsInput: MeterReadingsInput): String
@@ -159,10 +200,16 @@ module.exports = gql`
     createRefuse(input: BalanceInput): String!
     createSewerage(input: BalanceInput): String!
     createWaterTariffDomestic(input: BalanceInput): String!
-    createWaterTariffDomesticBasic(input: BalanceInput): String!
     createCharge(input: BalanceInput): String!
     createVat(input: BalanceInput): String!
     createInterest(input: BalanceInput): String!
     addBalanceReport(input: BalanceReportInput): String!
+    updateUserDetails(
+      accountNumber: String
+      firstName: String
+      lastName: String
+      phoneNumber: String
+      email: String
+    ): String!
   }
 `;

@@ -1,3 +1,4 @@
+const axios = require("axios");
 const Statement = require("../../models/Statement");
 const MeterReading = require("../../models/MeterReading");
 const StatementDetail = require("../../models/StatementDetail");
@@ -6,9 +7,39 @@ const Interest = require("../../models/Interest");
 const Refuse = require("../../models/Refuse");
 const Sewerage = require("../../models/Sewerage");
 const Vat = require("../../models/Vat");
+const Sms = require("../../models/Sms");
+const Email = require("../../models/Email");
 const WaterTariffDomestic = require("../../models/WaterTariffDomestic");
-const WaterTariffDomesticBasic = require("../../models/WaterTariffDomesticBasic");
 const sendMail = require("../../util/sendMail");
+
+const sendSMS = async (phoneNumber) => {
+  let formattedPhoneNumber = phoneNumber.substring(2);
+  try {
+    const apiKey =
+      "2319f2b218dfee20edf691f73ccba12f-73d582c6-316c-4b53-a90c-1c0c1fa1c94f";
+    const message = `Mohokare: Hello, Your statement for the month of December is available. You can access it here https://mohokarestatements.co.za/`;
+
+    const response = await axios.post(
+      "https://api.infobip.com/sms/1/text/single",
+      {
+        from: "27872406515",
+        to: "27" + formattedPhoneNumber,
+        text: message,
+      },
+      {
+        headers: {
+          Authorization: `App ${apiKey}`,
+        },
+      }
+    );
+
+    console.log("SMS STATUS ----------------> ", response.status);
+
+    return "Statements uploaded successfully!";
+  } catch (error) {
+    console.error("Error sending SMS:", error);
+  }
+};
 
 module.exports = {
   Query: {
@@ -16,7 +47,6 @@ module.exports = {
       try {
         const statementDetailsData = await StatementDetail.find();
 
-        console.log(statementDetailsData);
         return statementDetailsData;
       } catch (err) {
         console.error(err);
@@ -119,6 +149,74 @@ module.exports = {
         throw new Error(err);
       }
     },
+
+    async getSuccessfulEmailsCount() {
+      try {
+        const successfulEmailCount = await Email.countDocuments({
+          status: "Successful",
+        });
+        return successfulEmailCount;
+      } catch (err) {
+        console.error(err);
+        throw new Error(err);
+      }
+    },
+
+    async getFailedEmailsCount() {
+      try {
+        const successfulEmailCount = await Email.countDocuments({
+          status: "Failed",
+        });
+        return successfulEmailCount;
+      } catch (err) {
+        console.error(err);
+        throw new Error(err);
+      }
+    },
+
+    async getSuccessfulSmsCount() {
+      try {
+        const successfulSmsCount = await Sms.countDocuments({
+          status: "Successful",
+        });
+        return successfulSmsCount;
+      } catch (err) {
+        console.error(err);
+        throw new Error(err);
+      }
+    },
+
+    async getFailedSmsCount() {
+      try {
+        const failedSmsCount = await Sms.countDocuments({
+          status: "Failed",
+        });
+        return failedSmsCount;
+      } catch (err) {
+        console.error(err);
+        throw new Error(err);
+      }
+    },
+
+    async getUserNotifications(_, { accountNumber }) {
+      try {
+        const [emails, sms] = await Promise.all([
+          Email.find({ accountNumber }),
+          Sms.find({ accountNumber }),
+        ]);
+
+        // Create an object with the results
+        const notifications = {
+          emails,
+          sms,
+        };
+
+        return notifications;
+      } catch (err) {
+        console.error(err);
+        throw new Error(err);
+      }
+    },
   },
 
   Mutation: {
@@ -130,6 +228,12 @@ module.exports = {
           date,
           phoneNumber,
           email,
+          idNumber,
+          isIndigent,
+          indigentExpiry,
+          lastPaymentDate,
+          lastPaymentAmount,
+          accountStatus,
           province,
           town,
           ward,
@@ -146,6 +250,7 @@ module.exports = {
           days120,
           days90,
           days60,
+          days30,
           current,
           closingBalance,
           openingBalance,
@@ -164,6 +269,12 @@ module.exports = {
                 date,
                 phoneNumber,
                 email,
+                idNumber,
+                isIndigent,
+                indigentExpiry,
+                lastPaymentDate,
+                lastPaymentAmount,
+                accountStatus,
                 province,
                 town,
                 ward,
@@ -180,6 +291,7 @@ module.exports = {
                 days120,
                 days90,
                 days60,
+                days30,
                 current,
                 closingBalance,
                 openingBalance,
@@ -193,10 +305,19 @@ module.exports = {
           // If record doesn't exist, create a new one
           const newRecord = new StatementDetail({
             accountNumber,
+            firstName: "",
+            lastName: "",
             consumerName,
             date,
             phoneNumber,
             email,
+            password: "",
+            idNumber,
+            isIndigent,
+            indigentExpiry,
+            lastPaymentDate,
+            lastPaymentAmount,
+            accountStatus,
             province,
             town,
             ward,
@@ -213,6 +334,7 @@ module.exports = {
             days120,
             days90,
             days60,
+            days30,
             current,
             closingBalance,
             openingBalance,
@@ -220,6 +342,7 @@ module.exports = {
           });
 
           await newRecord.save();
+
           return { message: "Details added successfully" };
         }
       } catch (error) {
@@ -233,8 +356,6 @@ module.exports = {
       try {
         const {
           accountNumber,
-          email,
-          phoneNumber,
           marketValue,
           erfNumber,
           vatNumber,
@@ -252,8 +373,6 @@ module.exports = {
             { accountNumber },
             {
               $set: {
-                email,
-                phoneNumber,
                 marketValue,
                 erfNumber,
                 vatNumber,
@@ -567,105 +686,239 @@ module.exports = {
       }
     },
 
-    createWaterTariffDomesticBasic: async (_, { input }) => {
+    async createUserNotification(_, { accountNumber }) {
       try {
-        const { accountNumber, date, code, description, units, tariff, value } =
-          input;
+        let emailMessage =
+          "Mohokare: Hello, Your statement for the month of December is available. You can access it here https://mohokarestatements.co.za/";
+        const statement = await StatementDetail.findOne({
+          accountNumber,
+        });
 
-        // Check if a record with the given accountNumber, date, and code already exists
-        const existingWaterTariffDomesticBasic =
-          await WaterTariffDomesticBasic.findOne({
-            accountNumber,
+        // console.log(statement.email);
+
+        if (statement.email) {
+          await sendMail(statement.email, "Mohokare Statement", emailMessage);
+          let successfulEmailRes = new Email({
+            accountNumber: statement.accountNumber,
+            status: "Successful",
+            createdAt: new Date().toISOString(),
           });
+          successfulEmailRes.save();
+        }
 
-        if (existingWaterTariffDomesticBasic) {
-          // If record exists, update the existing record
-          await WaterTariffDomesticBasic.updateOne(
-            { accountNumber },
-            {
-              $set: {
-                description,
-                units,
-                tariff,
-                value,
-                updatedAt: new Date().toISOString(),
-              },
-            }
-          );
-
-          return {
-            message: "Water Tariff Domestic Basic updated successfully",
-          };
-        } else {
-          // If record doesn't exist, create a new one
-          const newWaterTariffDomesticBasic = new WaterTariffDomesticBasic({
-            accountNumber,
-            date,
-            code,
-            description,
-            units,
-            tariff,
-            value,
+        if (!statement.email) {
+          let failedEmailRes = new Email({
+            accountNumber: statement.accountNumber,
+            status: "Failed",
             createdAt: new Date().toISOString(),
           });
 
-          await newWaterTariffDomesticBasic.save();
-          return {
-            message: "Water Tariff Domestic Basic created successfully",
-          };
+          failedEmailRes.save();
         }
+
+        if (statement.phoneNumber) {
+          // sendSMS(statements[i].phoneNumber);
+          let successfulSmsRes = new Sms({
+            accountNumber: statement.accountNumber,
+            status: "Successful",
+            createdAt: new Date().toISOString(),
+          });
+
+          successfulSmsRes.save();
+        }
+        if (!statement.phoneNumber) {
+          let failedSmsRes = new Sms({
+            accountNumber: statement.accountNumber,
+            status: "Failed",
+            createdAt: new Date().toISOString(),
+          });
+
+          failedSmsRes.save();
+        }
+        return "User Notifications sent";
       } catch (error) {
-        console.error(
-          "Error creating/updating water tariff domestic basic:",
-          error
-        );
-        // Handle errors and throw an appropriate error
-        throw new Error("Failed to create/update water tariff domestic basic");
+        /*new Email({
+          accountNumber: statements.AccountNumber,
+          status: 'Failed',
+          createdAt: new Date().toISOString(),
+        });*/
+        console.error("Error in createNotifications:", error);
+        throw error; // Propagate the error if needed
+      }
+    },
+
+    async createUserSmsNotification(_, { accountNumber }) {
+      const statement = await StatementDetail.findOne({
+        accountNumber,
+      });
+      try {
+        if (statement.phoneNumber) {
+          let successfulSmsRes = new Sms({
+            accountNumber: statement.accountNumber,
+            status: "Successful",
+            createdAt: new Date().toISOString(),
+          });
+
+          successfulSmsRes.save();
+        }
+        if (!statement.phoneNumber) {
+          let failedSmsRes = new Sms({
+            accountNumber: statement.accountNumber,
+            status: "Failed",
+            createdAt: new Date().toISOString(),
+          });
+
+          failedSmsRes.save();
+        }
+        return "User Notifications sent";
+      } catch (error) {
+        /*new Email({
+          accountNumber: statements.AccountNumber,
+          status: 'Failed',
+          createdAt: new Date().toISOString(),
+        });*/
+        console.error("Error in createNotifications:", error);
+        throw error; // Propagate the error if needed
+      }
+    },
+
+    async createUserEmailNotification(_, { accountNumber }) {
+      try {
+        let emailMessage =
+          "Mohokare: Hello, Your statement for the month of December is available. You can access it here https://mohokarestatements.co.za/";
+        const statement = await StatementDetail.findOne({
+          accountNumber,
+        });
+
+        // console.log(statement.email);
+
+        if (statement.email) {
+          /* await sendMail(
+            statement.email,
+            "Mohokare Statement",
+            emailMessage
+          );*/
+          let successfulEmailRes = new Email({
+            accountNumber: statement.accountNumber,
+            status: "Successful",
+            createdAt: new Date().toISOString(),
+          });
+          successfulEmailRes.save();
+        }
+
+        if (!statement.email) {
+          let failedEmailRes = new Email({
+            accountNumber: statement.accountNumber,
+            status: "Failed",
+            createdAt: new Date().toISOString(),
+          });
+
+          failedEmailRes.save();
+        }
+
+        return "Email Notifications sent successfully";
+      } catch (error) {
+        /*new Email({
+          accountNumber: statements.AccountNumber,
+          status: 'Failed',
+          createdAt: new Date().toISOString(),
+        });*/
+        console.error("Error in createNotifications:", error);
+        throw error; // Propagate the error if needed
+      }
+    },
+    async createNotifications() {
+      try {
+        let emailMessage =
+          "Mohokare: Hello, Your statement for the month of December is available. You can access it here https://mohokarestatements.co.za/";
+        const statements = await StatementDetail.find();
+
+        for (let i = 0; i < statements.length; i++) {
+          if (statements[i].email) {
+            /*  await sendMail(
+          statements[i].email,
+          "Mohokare Statement",
+          emailMessage
+        );*/
+            let successfulEmailRes = new Email({
+              accountNumber: statements[i].accountNumber,
+              status: "Successful",
+              createdAt: new Date().toISOString(),
+            });
+            successfulEmailRes.save();
+          }
+
+          if (!statements[i].email) {
+            let failedEmailRes = new Email({
+              accountNumber: statements[i].accountNumber,
+              status: "Failed",
+              createdAt: new Date().toISOString(),
+            });
+
+            failedEmailRes.save();
+          }
+
+          if (statements[i].phoneNumber) {
+            // sendSMS(statements[i].phoneNumber);
+            let successfulSmsRes = new Sms({
+              accountNumber: statements[i].accountNumber,
+              status: "Successful",
+              createdAt: new Date().toISOString(),
+            });
+
+            successfulSmsRes.save();
+          }
+          if (!statements[i].phoneNumber) {
+            let failedSmsRes = new Sms({
+              accountNumber: statements[i].accountNumber,
+              status: "Failed",
+              createdAt: new Date().toISOString(),
+            });
+
+            failedSmsRes.save();
+          }
+        }
+        return "Bulk Notifications sent";
+      } catch (error) {
+        /*new Email({
+          accountNumber: statements.AccountNumber,
+          status: 'Failed',
+          createdAt: new Date().toISOString(),
+        });*/
+        console.error("Error in createNotifications:", error);
+        throw error; // Propagate the error if needed
+      }
+    },
+
+    async updateUserDetails(
+      _,
+      { accountNumber, firstName, lastName, phoneNumber, email }
+    ) {
+      // Hash the password
+
+      try {
+        // Find the user by account number
+        const existingUser = await StatementDetail.findOne({ accountNumber });
+
+        if (!existingUser) {
+          throw new Error("User not found");
+        }
+
+        // Update the user details
+        existingUser.firstName = firstName;
+        existingUser.lastName = lastName;
+        existingUser.phoneNumber = phoneNumber;
+        existingUser.email = email;
+
+        // Save the updated user details
+        await existingUser.save();
+
+        return "Details updated successfully";
+      } catch (error) {
+        // Handle errors, e.g., user not found or database error
+        console.error("Error updating user details:", error);
+        throw new Error("Error updating user details");
       }
     },
   },
-
-  async createMeterReadings(
-    _,
-    {
-      meterReadingsInput: {
-        accountNumber,
-        oldRead,
-        newRead,
-        consumption,
-        leviedAmount,
-      },
-    }
-  ) {
-    /*console.log(
-      accountNumber +
-        "- " +
-        oldRead +
-        "- " +
-        newRead +
-        "- " +
-        consumption +
-        "- " +
-        leviedAmount
-    );*/
-    const newMeterReadings = new MeterReading({
-      accountNumber: accountNumber,
-      oldRead: oldRead,
-      newRead: newRead,
-      consumption: consumption,
-      leviedAmount: leviedAmount,
-      createdAt: new Date().toISOString(),
-    });
-
-    const res = await newMeterReadings.save();
-    /*sendMail(
-      "rofhiwa@zimako.co.za",
-      "Mohokare Statement",
-      "Mohokare: Hello, Your statement for the month of December is available. You can access it here https://mohokarestatements.co.za/"
-    );*/
-
-    return res;
-  },
-
-  //Create Cash Payment
 };

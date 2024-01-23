@@ -49,6 +49,7 @@ module.exports = {
         if (existingReading) {
           // Update existing record
           existingReading.type = type;
+          existingReading.meterNumber = meterNumber;
           existingReading.oldRead = oldRead;
           existingReading.newRead = newRead;
           existingReading.consumption = consumption;

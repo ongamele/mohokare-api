@@ -1,11 +1,20 @@
 const { model, Schema } = require("mongoose");
 
 const statementDetailSchema = new Schema({
+  firstName: String,
+  lastName: String,
   accountNumber: String,
   date: String,
   consumerName: String,
   phoneNumber: String,
   email: String,
+  password: String,
+  idNumber: String,
+  isIndigent: String,
+  indigentExpiry: String,
+  lastPaymentDate: String,
+  lastPaymentAmount: String,
+  accountStatus: String,
   province: String,
   town: String,
   suburb: String,
@@ -23,6 +32,7 @@ const statementDetailSchema = new Schema({
   days120: String,
   days90: String,
   days60: String,
+  days30: String,
   current: String,
   closingBalance: String,
   openingBalance: String,
