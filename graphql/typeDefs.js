@@ -84,6 +84,7 @@ module.exports = gql`
     idNumber: String
     isIndigent: String
     indigentExpiry: String
+    indigentApplicationDate: String
     lastPaymentDate: String
     lastPaymentAmount: String
     accountStatus: String
@@ -120,6 +121,7 @@ module.exports = gql`
     idNumber: String
     isIndigent: String
     indigentExpiry: String
+    indigentApplicationDate: String
     lastPaymentDate: String
     lastPaymentAmount: String
     accountStatus: String

@@ -1,4 +1,5 @@
 const axios = require("axios");
+const bcrypt = require("bcryptjs");
 const Statement = require("../../models/Statement");
 const MeterReading = require("../../models/MeterReading");
 const StatementDetail = require("../../models/StatementDetail");
@@ -12,12 +13,17 @@ const Email = require("../../models/Email");
 const WaterTariffDomestic = require("../../models/WaterTariffDomestic");
 const sendMail = require("../../util/sendMail");
 
-const sendSMS = async (phoneNumber) => {
-  let formattedPhoneNumber = phoneNumber.substring(2);
+const sendSMS = async (phoneNumber, customMessage = null) => {
+  let formattedPhoneNumber = phoneNumber.substring(1);
+
   try {
     const apiKey =
       "2319f2b218dfee20edf691f73ccba12f-73d582c6-316c-4b53-a90c-1c0c1fa1c94f";
-    const message = `Mohokare: Hello, Your statement for the month of December is available. You can access it here https://mohokarestatements.co.za/`;
+
+    // Use custom message if provided, otherwise use the default message
+    const message =
+      customMessage ||
+      `Mohokare: Hello, Your statement for the month of December is available. You can access it here https://mohokarestatements.co.za/`;
 
     const response = await axios.post(
       "https://api.infobip.com/sms/1/text/single",
@@ -231,6 +237,7 @@ module.exports = {
           idNumber,
           isIndigent,
           indigentExpiry,
+          indigentApplicationDate,
           lastPaymentDate,
           lastPaymentAmount,
           accountStatus,
@@ -272,6 +279,7 @@ module.exports = {
                 idNumber,
                 isIndigent,
                 indigentExpiry,
+                indigentApplicationDate,
                 lastPaymentDate,
                 lastPaymentAmount,
                 accountStatus,
@@ -315,6 +323,7 @@ module.exports = {
             idNumber,
             isIndigent,
             indigentExpiry,
+            indigentApplicationDate,
             lastPaymentDate,
             lastPaymentAmount,
             accountStatus,
@@ -896,6 +905,21 @@ module.exports = {
     ) {
       // Hash the password
 
+      function generateRandomString() {
+        const characters =
+          "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+        let result = "";
+        for (let i = 0; i < 4; i++) {
+          const randomIndex = Math.floor(Math.random() * characters.length);
+          result += characters.charAt(randomIndex);
+        }
+        return result;
+      }
+
+      // Generate a random string
+      const randomString = generateRandomString();
+      var newPassword = await bcrypt.hash(randomString, 12);
+
       try {
         // Find the user by account number
         const existingUser = await StatementDetail.findOne({ accountNumber });
@@ -909,9 +933,14 @@ module.exports = {
         existingUser.lastName = lastName;
         existingUser.phoneNumber = phoneNumber;
         existingUser.email = email;
+        existingUser.password = newPassword;
 
         // Save the updated user details
         await existingUser.save();
+
+        let newMessage = `Your Mohokare username is ${email} and your password is ${randomString}`;
+
+        sendSMS(phoneNumber, newMessage);
 
         return "Details updated successfully";
       } catch (error) {
