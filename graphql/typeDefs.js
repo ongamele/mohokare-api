@@ -109,6 +109,7 @@ module.exports = gql`
     current: String
     closingBalance: String
     openingBalance: String
+    token: String!
     createdAt: String
   }
 
@@ -190,6 +191,7 @@ module.exports = gql`
 
   type Mutation {
     loginAdmin(email: String!, password: String!): Admin!
+    loginCustomer(email: String!, password: String!): StatementDetail!
     createNotifications: String!
     createUserNotification(accountNumber: String!): String!
     createUserSmsNotification(accountNumber: String!): String!

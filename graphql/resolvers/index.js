@@ -1,4 +1,5 @@
 const adminResolvers = require("./admin");
+const customerResolvers = require("./customer");
 const statementsResolvers = require("./statements");
 const openingStatementsResolvers = require("./openingStatement");
 const meterReadingsResolvers = require("./meterReadings");
@@ -15,5 +16,6 @@ module.exports = {
     ...meterReadingsResolvers.Mutation,
     ...adminResolvers.Mutation,
     ...openingStatementsResolvers.Mutation,
+    ...customerResolvers.Mutation,
   },
 };

@@ -907,7 +907,7 @@ module.exports = {
 
       function generateRandomString() {
         const characters =
-          "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+          "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
         let result = "";
         for (let i = 0; i < 4; i++) {
           const randomIndex = Math.floor(Math.random() * characters.length);
