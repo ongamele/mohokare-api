@@ -1,32 +1,36 @@
 const nodemailer = require("nodemailer");
 
-// async..await is not allowed in global scope, must use a wrapper
 module.exports = async (email, subject, text) => {
   try {
     let transporter = nodemailer.createTransport({
       host: "smtp.gmail.com",
       port: 587,
-      secure: false, // true for 465, false for other ports
+      secure: false,
       auth: {
-        user: "ogebhuza@gmail.com", // generated ethereal user
-        pass: "ytdb cwiq kjxl kdpb", // generated ethereal password
+        user: "ogebhuza@gmail.com",
+        pass: "ytdb cwiq kjxl kdpb",
       },
       tls: {
         rejectUnauthorized: false,
       },
     });
 
-    // send mail with defined transport object
-    await transporter.sendMail({
-      from: '"Mohokare 👻" ogebhuza@gmail.com', // sender address
+    let message = {
+      from: '"Mohokare 👻" <ogebhuza@gmail.com>',
       to: email,
-      subject: subject, // Subject line
-      text: text, // plain text body
-    });
+      subject: subject,
+      text: text,
+    };
 
-    console.log("Email sent successfully");
+    transporter.sendMail(message, function (err, data) {
+      if (err) {
+        return "Error " + err;
+      } else {
+        return "Email sent successfully";
+      }
+    });
   } catch (error) {
-    console.log("Email not sent");
-    console.log(error);
+    console.error("Error sending email:", error);
+    throw error; // Rethrow the error to handle it elsewhere if needed
   }
 };

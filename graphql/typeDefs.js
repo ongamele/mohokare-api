@@ -160,6 +160,14 @@ module.exports = gql`
     createdAt: String!
   }
 
+  type PaymentArrangement {
+    id: ID!
+    accountNumber: String!
+    paymentDate: String!
+    amount: Int!
+    createdAt: String!
+  }
+
   input AdminInput {
     name: String!
     surname: String!
@@ -187,6 +195,8 @@ module.exports = gql`
     getSuccessfulSmsCount: Int!
     getFailedSmsCount: Int
     getUserNotifications(accountNumber: String!): Notification
+    getAllPaymentArrangements: [PaymentArrangement]
+    getUserPaymentArrangements(accountNumber: String!): [PaymentArrangement]
   }
 
   type Mutation {
@@ -214,6 +224,18 @@ module.exports = gql`
       lastName: String
       phoneNumber: String
       email: String
+    ): String!
+
+    createPaymentArrangement(
+      accountNumber: String!
+      paymentDate: String!
+      amount: Int!
+    ): String!
+
+    createPaymentReminders(
+      notificationType: String!
+      age: String!
+      message: String!
     ): String!
   }
 `;

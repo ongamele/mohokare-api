@@ -42,10 +42,10 @@ module.exports = {
       }*/
 
       const match = await bcrypt.compare(password, admin.password);
-      console.log(match);
+
       if (!match) {
         const wrongError = "Wrong credentials";
-        console.log(wrongError);
+
         return wrongError;
       }
       const token = generateToken(admin);

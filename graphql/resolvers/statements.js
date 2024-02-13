@@ -11,6 +11,8 @@ const Vat = require("../../models/Vat");
 const Sms = require("../../models/Sms");
 const Email = require("../../models/Email");
 const WaterTariffDomestic = require("../../models/WaterTariffDomestic");
+const PaymentArrangement = require("../../models/PaymentArrangement");
+const PaymentReminder = require("../../models/PaymentReminder");
 const sendMail = require("../../util/sendMail");
 
 const sendSMS = async (phoneNumber, customMessage = null) => {
@@ -54,6 +56,17 @@ module.exports = {
         const statementDetailsData = await StatementDetail.find();
 
         return statementDetailsData;
+      } catch (err) {
+        console.error(err);
+        throw new Error(err);
+      }
+    },
+
+    async getAllPaymentArrangements() {
+      try {
+        const paymentArrangements = await PaymentArrangement.find();
+
+        return paymentArrangements;
       } catch (err) {
         console.error(err);
         throw new Error(err);
@@ -218,6 +231,18 @@ module.exports = {
         };
 
         return notifications;
+      } catch (err) {
+        console.error(err);
+        throw new Error(err);
+      }
+    },
+
+    async getUserPaymentArrangements(_, { accountNumber }) {
+      try {
+        const userPaymentArrangements = await PaymentArrangement.find({
+          accountNumber,
+        });
+        return userPaymentArrangements;
       } catch (err) {
         console.error(err);
         throw new Error(err);
@@ -947,6 +972,67 @@ module.exports = {
         // Handle errors, e.g., user not found or database error
         console.error("Error updating user details:", error);
         throw new Error("Error updating user details");
+      }
+    },
+
+    createPaymentArrangement: async (
+      _,
+      { accountNumber, paymentDate, amount }
+    ) => {
+      try {
+        // If record doesn't exist, create a new one
+        const newPaymentArrangement = new PaymentArrangement({
+          accountNumber,
+          paymentDate,
+          amount,
+          createdAt: new Date().toISOString(),
+        });
+
+        await newPaymentArrangement.save();
+        return "Payment arrangement created successfully";
+      } catch (error) {
+        console.error("Error creating payment arrangement:", error);
+        // Handle errors and throw an appropriate error
+        throw new Error("Error creating payment arrangement");
+      }
+    },
+
+    createPaymentReminders: async (_, { notificationType, age, message }) => {
+      try {
+        if (age === "days30") {
+          const users = await StatementDetail.find({});
+        }
+        const users = await StatementDetail.find({});
+
+        for (let i = 0; i < 10; i++) {
+          if (notificationType === "SMS") {
+            await sendSMS(users[i].phoneNumber, message);
+          } else if (notificationType === "Email") {
+            await sendMail(
+              users[i].email,
+              "Mohokare Payment Reminder",
+              message
+            );
+          }
+          /*console.log(users[i].accountNumber);
+          console.log(users[i].phoneNumber);
+          console.log(users[i].email);*/
+        }
+
+        /*const newPaymentAReminder = new PaymentReminder({
+          notificationType,
+          age,
+          message,
+          accountNumber,
+          createdAt: new Date().toISOString(),
+        });*/
+
+        // await newPaymentAReminder.save();
+        return "Payment reminder sent successfully";
+      } catch (error) {
+        console.error("Error creating payment reminder:", error);
+        // Handle errors and throw an appropriate error
+        throw new Error("Error creating payment arrangement");
       }
     },
   },
