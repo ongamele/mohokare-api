@@ -5,17 +5,9 @@ const Admin = require("../../models/Admin");
 const { SECRETE_KEY } = require("../../config");
 
 function generateToken(admin) {
-  return jwt.sign(
-    {
-      name: admin.name,
-      surname: admin.surname,
-      email: admin.email,
-      password: admin.password,
-      phoneNumber: admin.phoneNumber,
-    },
-    SECRETE_KEY,
-    { expiresIn: "2h" }
-  );
+  return jwt.sign({ id: admin._id }, SECRETE_KEY, {
+    expiresIn: "2h",
+  });
 }
 
 module.exports = {
@@ -35,11 +27,11 @@ module.exports = {
     async loginAdmin(_, { email, password }) {
       const admin = await Admin.findOne({ email });
 
-      /* if (!admin) {
+      if (!admin) {
         const errors = "User not found";
         console.log(errors);
         return errors;
-      }*/
+      }
 
       const match = await bcrypt.compare(password, admin.password);
 
@@ -48,6 +40,7 @@ module.exports = {
 
         return wrongError;
       }
+
       const token = generateToken(admin);
       return { ...admin._doc, id: admin._id, token };
     },

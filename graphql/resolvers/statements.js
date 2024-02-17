@@ -237,6 +237,24 @@ module.exports = {
       }
     },
 
+    async getAllNotifications() {
+      try {
+        const sms = await Sms.find();
+
+        const emails = await Email.find();
+        // Create an object with the results
+        const notifications = {
+          emails,
+          sms,
+        };
+
+        return notifications;
+      } catch (err) {
+        console.error(err);
+        throw new Error(err);
+      }
+    },
+
     async getUserPaymentArrangements(_, { accountNumber }) {
       try {
         const userPaymentArrangements = await PaymentArrangement.find({
@@ -979,17 +997,37 @@ module.exports = {
       _,
       { accountNumber, paymentDate, amount }
     ) => {
+      const startOfMonth = new Date();
+      startOfMonth.setDate(2); // Set to the first day of the month
+      startOfMonth.setHours(0, 0, 0, 0); // Set to the beginning of the day
+
+      const endOfMonth = new Date(startOfMonth);
+      endOfMonth.setMonth(endOfMonth.getMonth() + 1);
+      endOfMonth.setDate(0); // Set to the last day of the month
+      endOfMonth.setHours(23, 59, 59, 999); // Set to the end of the day
+
       try {
-        // If record doesn't exist, create a new one
-        const newPaymentArrangement = new PaymentArrangement({
+        const record = await PaymentArrangement.find({
           accountNumber,
-          paymentDate,
-          amount,
-          createdAt: new Date().toISOString(),
+          createdAt: {
+            $gte: startOfMonth.toISOString(),
+            $lte: endOfMonth.toISOString(),
+          },
         });
 
-        await newPaymentArrangement.save();
-        return "Payment arrangement created successfully";
+        // If record doesn't exist, create a new one
+        if (record.length === 0) {
+          const newPaymentArrangement = new PaymentArrangement({
+            accountNumber,
+            paymentDate,
+            amount,
+            createdAt: new Date().toISOString(),
+          });
+          await newPaymentArrangement.save();
+          return "Payment arrangement created successfully.";
+        } else {
+          return "You've already made payment arrangement this month.";
+        }
       } catch (error) {
         console.error("Error creating payment arrangement:", error);
         // Handle errors and throw an appropriate error

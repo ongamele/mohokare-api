@@ -195,6 +195,8 @@ module.exports = gql`
     getSuccessfulSmsCount: Int!
     getFailedSmsCount: Int
     getUserNotifications(accountNumber: String!): Notification
+    getAllNotifications: Notification
+
     getAllPaymentArrangements: [PaymentArrangement]
     getUserPaymentArrangements(accountNumber: String!): [PaymentArrangement]
   }
