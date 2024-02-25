@@ -176,6 +176,15 @@ module.exports = gql`
     password: String!
   }
 
+  type PaymentReminders {
+    id: ID!
+    notificationType: String!
+    age: String!
+    message: String!
+    status: String!
+    createdAt: String!
+  }
+
   type Query {
     getAllStatements: [StatementDetail]
     getStatement(accountNumber: String!): StatementDetail
@@ -199,6 +208,9 @@ module.exports = gql`
 
     getAllPaymentArrangements: [PaymentArrangement]
     getUserPaymentArrangements(accountNumber: String!): [PaymentArrangement]
+
+    getSuccessfulPaymentRemindersCount: Int!
+    getFailedPaymentRemindersCount: Int!
   }
 
   type Mutation {
@@ -235,9 +247,9 @@ module.exports = gql`
     ): String!
 
     createPaymentReminders(
-      notificationType: String!
-      age: String!
-      message: String!
+      notificationType: String
+      age: String
+      message: String
     ): String!
   }
 `;

@@ -5,6 +5,7 @@ const paymentReminderSchema = new Schema({
   age: String,
   message: String,
   accountNumber: String,
+  status: String,
   createdAt: String,
 });
 

@@ -266,6 +266,30 @@ module.exports = {
         throw new Error(err);
       }
     },
+
+    async getSuccessfulPaymentRemindersCount() {
+      try {
+        const successCount = await PaymentReminder.countDocuments({
+          status: "Successful",
+        });
+        return successCount;
+      } catch (err) {
+        console.error(err);
+        throw new Error(err);
+      }
+    },
+
+    async getFailedPaymentRemindersCount() {
+      try {
+        const failedCount = await PaymentReminder.countDocuments({
+          status: "Failed",
+        });
+        return failedCount;
+      } catch (err) {
+        console.error(err);
+        throw new Error(err);
+      }
+    },
   },
 
   Mutation: {
@@ -845,11 +869,7 @@ module.exports = {
         // console.log(statement.email);
 
         if (statement.email) {
-          /* await sendMail(
-            statement.email,
-            "Mohokare Statement",
-            emailMessage
-          );*/
+          await sendMail(statement.email, "Mohokare Statement", emailMessage);
           let successfulEmailRes = new Email({
             accountNumber: statement.accountNumber,
             status: "Successful",
@@ -870,11 +890,11 @@ module.exports = {
 
         return "Email Notifications sent successfully";
       } catch (error) {
-        /*new Email({
+        new Email({
           accountNumber: statements.AccountNumber,
-          status: 'Failed',
+          status: "Failed",
           createdAt: new Date().toISOString(),
-        });*/
+        });
         console.error("Error in createNotifications:", error);
         throw error; // Propagate the error if needed
       }
@@ -887,11 +907,11 @@ module.exports = {
 
         for (let i = 0; i < statements.length; i++) {
           if (statements[i].email) {
-            /*  await sendMail(
-          statements[i].email,
-          "Mohokare Statement",
-          emailMessage
-        );*/
+            await sendMail(
+              statements[i].email,
+              "Mohokare Statement",
+              emailMessage
+            );
             let successfulEmailRes = new Email({
               accountNumber: statements[i].accountNumber,
               status: "Successful",
@@ -911,7 +931,7 @@ module.exports = {
           }
 
           if (statements[i].phoneNumber) {
-            // sendSMS(statements[i].phoneNumber);
+            sendSMS(statements[i].phoneNumber);
             let successfulSmsRes = new Sms({
               accountNumber: statements[i].accountNumber,
               status: "Successful",
@@ -932,11 +952,11 @@ module.exports = {
         }
         return "Bulk Notifications sent";
       } catch (error) {
-        /*new Email({
+        new Email({
           accountNumber: statements.AccountNumber,
-          status: 'Failed',
+          status: "Failed",
           createdAt: new Date().toISOString(),
-        });*/
+        });
         console.error("Error in createNotifications:", error);
         throw error; // Propagate the error if needed
       }
@@ -1037,35 +1057,82 @@ module.exports = {
 
     createPaymentReminders: async (_, { notificationType, age, message }) => {
       try {
+        var users = {};
+
         if (age === "days30") {
-          const users = await StatementDetail.find({});
+          users = await StatementDetail.find({ days30: { $ne: "" } });
         }
-        const users = await StatementDetail.find({});
 
-        for (let i = 0; i < 10; i++) {
+        if (age === "days60") {
+          users = await StatementDetail.find({ days60: { $ne: "" } });
+        }
+
+        if (age === "days90") {
+          users = await StatementDetail.find({ days60: { $ne: "" } });
+        }
+
+        if (age === "days120") {
+          users = await StatementDetail.find({ days60: { $ne: "" } });
+        }
+
+        for (let i = 0; i < users.length; i++) {
           if (notificationType === "SMS") {
-            await sendSMS(users[i].phoneNumber, message);
+            if (users[i].phoneNumber) {
+              await sendSMS(users[i].phoneNumber, message);
+              var newPaymentAReminder = new PaymentReminder({
+                notificationType,
+                age,
+                message,
+                status: "Successful",
+                accountNumber: users[i].accountNumber,
+                createdAt: new Date().toISOString(),
+              });
+
+              await newPaymentAReminder.save();
+            } else {
+              var newPaymentAReminder = new PaymentReminder({
+                notificationType,
+                age,
+                message,
+                status: "Failed",
+                accountNumber: users[i].accountNumber,
+                createdAt: new Date().toISOString(),
+              });
+
+              await newPaymentAReminder.save();
+            }
           } else if (notificationType === "Email") {
-            await sendMail(
-              users[i].email,
-              "Mohokare Payment Reminder",
-              message
-            );
+            if (users[i].email) {
+              await sendMail(
+                users[i].email,
+                "Mohokare Payment Reminder",
+                message
+              );
+              var newPaymentAReminder = new PaymentReminder({
+                notificationType,
+                age,
+                message,
+                status: "Seccessful",
+                accountNumber: users[i].accountNumber,
+                createdAt: new Date().toISOString(),
+              });
+
+              await newPaymentAReminder.save();
+            } else {
+              var newPaymentAReminder = new PaymentReminder({
+                notificationType,
+                age,
+                message,
+                status: "Failed",
+                accountNumber: users[i].accountNumber,
+                createdAt: new Date().toISOString(),
+              });
+
+              await newPaymentAReminder.save();
+            }
           }
-          /*console.log(users[i].accountNumber);
-          console.log(users[i].phoneNumber);
-          console.log(users[i].email);*/
         }
 
-        /*const newPaymentAReminder = new PaymentReminder({
-          notificationType,
-          age,
-          message,
-          accountNumber,
-          createdAt: new Date().toISOString(),
-        });*/
-
-        // await newPaymentAReminder.save();
         return "Payment reminder sent successfully";
       } catch (error) {
         console.error("Error creating payment reminder:", error);
