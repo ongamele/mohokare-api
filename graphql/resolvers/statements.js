@@ -830,7 +830,7 @@ module.exports = {
       try {
         let smsNote =
           "Mohokare. Please download your statement here http://localhost:5173/download/0000000001";
-        sendSMS("0788415424", smsNote);
+        sendSMS(statement.phoneNumber, smsNote);
         if (statement.phoneNumber) {
           let successfulSmsRes = new Sms({
             accountNumber: statement.accountNumber,
