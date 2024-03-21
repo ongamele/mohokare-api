@@ -100,14 +100,15 @@ module.exports = gql`
     vatNumber: String
     deposit: String
     marketValue: String
+    closingBalance: String
     erfNumber: String
     taxNumber: String
-    days120: String
-    days90: String
-    days60: String
-    days30: String
-    current: String
-    closingBalance: String
+    days120: Float
+    days90: Float
+    days60: Float
+    days30: Float
+    current: Float
+
     openingBalance: String
     token: String!
     createdAt: String
@@ -140,11 +141,11 @@ module.exports = gql`
     marketValue: String
     erfNumber: String
     taxNumber: String
-    days120: String
-    days90: String
-    days60: String
-    days30: String
-    current: String
+    days120: Float
+    days90: Float
+    days60: Float
+    days30: Float
+    current: Float
     closingBalance: String
     openingBalance: String
   }

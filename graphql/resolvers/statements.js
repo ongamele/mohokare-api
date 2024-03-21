@@ -363,11 +363,11 @@ module.exports = {
                 erfNumber,
                 deposit,
                 taxNumber,
-                days120,
-                days90,
-                days60,
-                days30,
-                current,
+                days120: existingRecord.days120 + days120,
+                days90: existingRecord.days90 + days90,
+                days60: existingRecord.days60 + days60,
+                days30: existingRecord.days30 + days30,
+                current: existingRecord.current + current,
                 closingBalance,
                 openingBalance,
                 updatedAt: new Date().toISOString(),
@@ -829,8 +829,8 @@ module.exports = {
       });
       try {
         let smsNote =
-          "Mohokare. Please download your statement here http://localhost:5173/download/0000000001";
-        sendSMS(statement.phoneNumber, smsNote);
+          "Mohokare. Please download your statement here https://mohokare-admin.netlify.app/download/0000000001";
+        sendSMS("0849626748", smsNote);
         if (statement.phoneNumber) {
           let successfulSmsRes = new Sms({
             accountNumber: statement.accountNumber,

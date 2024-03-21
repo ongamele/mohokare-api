@@ -5,7 +5,7 @@ module.exports = {
   Query: {
     async getAllMeterReadings() {
       try {
-        const meterReadings = await MwterReading.find().sort({
+        const meterReadings = await MeterReading.find().sort({
           createdAt: -1,
         });
         return meterReadings;
