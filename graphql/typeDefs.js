@@ -212,6 +212,7 @@ module.exports = gql`
 
     getSuccessfulPaymentRemindersCount: Int!
     getFailedPaymentRemindersCount: Int!
+    getCustomers: String!
   }
 
   type Mutation {
@@ -251,6 +252,17 @@ module.exports = gql`
       notificationType: String
       age: String
       message: String
+    ): String!
+
+    processPayment(
+      amount: Float!
+      name: String!
+      expiryMonth: String!
+      expiryYear: Int!
+      cvc: Int!
+      name: String!
+      accountNumber: String!
+      cardNumber: String!
     ): String!
   }
 `;
